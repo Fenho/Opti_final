@@ -213,7 +213,7 @@ modelo.addConstrs((x[e, i, t, d] == x[e, i , (t - 1), d] + quicksum(z[e, j, i, t
 modelo.addConstrs((quicksum(w[e, i, t] for i in P) == quicksum(y[e, i, t, t + b[e]] for i in P) for e in E for t in T if ((t <= (Tb - b[e])))), name="c2")
 
 # La gente que ingresa es la suma de los ingresados por urgencia con los de consulta
-modelo.addConstrs((w[e, i, t] == k[e, i, t] + quicksum(nu[e, i, t, b] for b in T2 if b <= t) for e in E for i in P for t in T), name="c3")
+modelo.addConstrs((w[e, i, t] == k[e, i, t] + quicksum(nu[e, i, t, b] for t in T2 if t <= b) for e in E for i in P for b in T), name="c3")
 # modelo.addConstrs((w[e, i, t, t] == k[e, i, t] for e in E for i in P for t in T), name="c3")
 
 # Nunca se sobrepasa la capacidad de piezas
@@ -229,17 +229,19 @@ modelo.addConstrs((quicksum(x[e, i, t, d] for e in E for d in T) <= M * v[i, t] 
 
 # Atender a todos los no urgentes(desde el día 2 en adelante)
 # TODO revisar que la sumatoria funcione
-# TODO revisar que el +1 de la sumatoria este bien, y que funcione el range
-# modelo.addConstrs((quicksum(nu[e, i, t, b] for t in range(b, b + m[e] + 1)) == h[e, b] for e in E for b in T if ((2 <= b) and (b <= Tb - m[e]))), name= "c7")
+modelo.addConstrs((quicksum(nu[e, i, t, b] for t in range(b, b + m[e] + 1) for i in P) == h[e, b] for e in E for b in T if ((2 <= b) and (b <= Tb - m[e]))), name= "c7")
 
 # Atender a todos los pacientes no urgentes y a los que estaban esperando antes
 # de la implementación del sistema
 # TODO revisar el 1
-# modelo.addConstrs((quicksum(nu[e, i, t, 1] for t in range(1, m[e] + 1 + 1) for i in P) == h[e, 1] + u[e] for e in E), name="c8")
+modelo.addConstrs((quicksum(nu[e, i, t, 1] for t in range(1, m[e] + 1 + 1) for i in P) == h[e, 1] + u[e] for e in E), name="c8")
 
 # Nadie se va el día que no le corresponde
 # TODO revisar el if y orden de fors
 modelo.addConstrs((y[e, i, t, d] == 0 for e in E for i in P for t in T for d in T2 if t != (d + b[e])), name="c9")
+
+# Inicializacion de las variables
+modelo.addConstrs((x[e, i, 0, d] == 0 for e in E for i in P for d in T2 if t != (d + b[e])), name="c9")
 
 # Restriccion trivial
 """ BORRADA """
