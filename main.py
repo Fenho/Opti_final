@@ -182,7 +182,7 @@ M = 100
 x = modelo.addVars(E, P, T, T2, vtype=GRB.INTEGER, name="x")
 # Cantidad de pacientes con enfermedad e ∈ E internados en la pieza i ∈ P el
 # día t ∈ Γ.
-w = modelo.addVars(E, P, T, T2, vtype=GRB.INTEGER, name="w")
+w = modelo.addVars(E, P, T, vtype=GRB.INTEGER, name="w")
 # Cantidad de pacientes con enfermedad e ∈ E internados en la pieza i ∈ P el día
 # t ∈ Γ por urgencia.
 k = modelo.addVars(E, P, T, vtype=GRB.INTEGER, name="k")
@@ -206,14 +206,14 @@ modelo.update()
 ''' Restricciones '''
 
 # Flujo común
-modelo.addConstrs((x[e, i, t, d] == x[e, i , (t - 1), d] + quicksum(z[e, j, i, t, d] - z[e, i, j, t, d] for j in P2) + w[e, i, t, t] - y[e, i, t, d] for e in E for i in P for d in range(1, Tb + 1) for t in range(1, Tb + 1) if (d < t)), name="c1")
+modelo.addConstrs((x[e, i, t, d] == x[e, i , (t - 1), d] + quicksum(z[e, j, i, t, d] - z[e, i, j, t, d] for j in P2) + w[e, i, t] - y[e, i, t, d] for e in E for i in P for d in range(1, Tb + 1) for t in range(1, Tb + 1) if (d < t)), name="c1")
 
 # Todos se van el día que les corresponde
 # TODO revisar si aqui hay un error, si no el constraint hay que hacerlo con addConstr
-modelo.addConstrs((quicksum(w[e, i, t, t] for i in P) == quicksum(y[e, i, t + b[e], t] for i in P) for e in E for t in T if ((t <= (Tb - b[e])))), name="c2")
+modelo.addConstrs((quicksum(w[e, i, t] for i in P) == quicksum(y[e, i, t, t + b[e]] for i in P) for e in E for t in T if ((t <= (Tb - b[e])))), name="c2")
 
 # La gente que ingresa es la suma de los ingresados por urgencia con los de consulta
-modelo.addConstrs((w[e, i, t, t] == k[e, i, t] + quicksum(nu[e, i, t, b] for b in T2 if b <= t) for e in E for i in P for t in T), name="c3")
+modelo.addConstrs((w[e, i, t] == k[e, i, t] + quicksum(nu[e, i, t, b] for b in T2 if b <= t) for e in E for i in P for t in T), name="c3")
 # modelo.addConstrs((w[e, i, t, t] == k[e, i, t] for e in E for i in P for t in T), name="c3")
 
 # Nunca se sobrepasa la capacidad de piezas
@@ -242,7 +242,7 @@ modelo.addConstrs((quicksum(x[e, i, t, d] for e in E for d in T) <= M * v[i, t] 
 modelo.addConstrs((y[e, i, t, d] == 0 for e in E for i in P for t in T for d in T2 if t != (d + b[e])), name="c9")
 
 # Restriccion trivial
-modelo.addConstrs((w[e, i, t, d] == 0 for i in P for e in E for t in T for d in T2 if d > t), name= "c10")
+""" BORRADA """
 #
 
 # ''' NUEVO '''
@@ -261,7 +261,7 @@ modelo.addConstrs((quicksum(k[e, i, t] for i in P) <= d[e, t] for e in E for t i
 ''' Función Objetivo '''
 # modelo.setObjective(quicksum(l[e, t] * (d[e, t] - k[e, i , t]) for e in E for t in T for i in P) + quicksum(v[i, t] * n[i, t] for i in P for t in T) + quicksum(c[e, i, j] * z[e, i, j, t, d] for e in E for i in P for j in P2 for t in T for d in T2) + quicksum(w[e, i, t] * f[e, i] for e in E for t in T for i in P), GRB.MINIMIZE)
 # modelo.setObjective(quicksum(l[e, t] * (d[e, t] - k[e, i , t]) for e in E for t in T for i in P) + quicksum(x[e, i, t, d] * f[e, i] for i in P for e in E for t in range(1, len(T)) for d in T), GRB.MINIMIZE)
-modelo.setObjective(quicksum(l[e, t] * (d[e, t] - k[e, i , t]) for e in E for t in T for i in P) + quicksum(x[e, i, t, d] * f[e, i] for i in P for e in E for t in range(1, Tb + 1) for d in range(1, Tb + 1)), GRB.MINIMIZE)
+modelo.setObjective(quicksum(l[e, t] * (d[e, t] - k[e, i , t]) for e in E for t in T for i in P) + quicksum(x[e, i, t, d] * f[e, i] for i in P for e in E for t in range(1, Tb + 1) for d in range(1, Tb + 1)) + quicksum(n[i, t] * v[i, t] for i in P for t in range(1, Tb + 1)), GRB.MINIMIZE)
 
 ''' Solucion '''
 modelo.optimize()
